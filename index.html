@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>नेपाली टाइपिङ खेल</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1a1a28;
+    --surface: #1e1e2e;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e6f0;
+    --muted: #5c5a72;
+    --accent: #f5a623;
+    --accent2: #e84a5f;
+    --green: #4ecb71;
+    --blue: #4aa8ff;
+    --purple: #9b72ff;
+    --mono: 'Space Mono', monospace;
+    --devanagari: 'Noto Sans Devanagari', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG grid pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    display: none;
+    position: relative;
+    z-index: 1;
+  }
+  .screen.active { display: flex; }
+
+  /* ===== LANDING ===== */
+  #screen-landing {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .logo-mark {
+    font-family: var(--devanagari);
+    font-size: clamp(48px, 8vw, 80px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    animation: fadeUp 0.6s 0.1s ease both;
+    margin-bottom: 3rem;
+  }
+
+  .tagline {
+    font-family: var(--devanagari);
+    font-size: 18px;
+    color: var(--muted);
+    margin-bottom: 4rem;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  /* Level grid */
+  .levels-heading {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .levels-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    max-width: 600px;
+    width: 100%;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .level-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .level-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .level-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .level-card.locked {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .level-card.completed .level-num { color: var(--green); }
+  .level-card.current { border-color: var(--accent); }
+
+  .level-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .level-label {
+    font-family: var(--devanagari);
+    font-size: 11px;
+    color: var(--muted);
+    display: block;
+  }
+
+  .level-stars {
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .level-lock {
+    font-size: 16px;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  /* ===== GAME SCREEN ===== */
+  #screen-game {
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 1.5rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .back-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .back-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  .level-badge {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .level-badge strong { color: var(--accent); }
+
+  /* Progress bar */
+  .progress-track {
+    height: 3px;
+    background: var(--bg3);
+    border-radius: 99px;
+    margin-bottom: 2.5rem;
+    position: relative;
+    overflow: visible;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    position: relative;
+  }
+
+  .progress-glow {
+    position: absolute;
+    right: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* Milestones on progress */
+  .progress-milestones {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    margin-bottom: 2rem;
+  }
+
+  .milestone {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    align-items: flex-end;
+  }
+
+  .stat-box {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent);
+    font-family: var(--mono);
+  }
+
+  .stat-num.good { color: var(--green); }
+  .stat-num.bad { color: var(--accent2); }
+
+  .stat-lbl {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    align-self: center;
+  }
+
+  /* Timer ring */
+  .timer-wrap {
+    margin-left: auto;
+    position: relative;
+    width: 64px;
+    height: 64px;
+  }
+
+  .timer-svg {
+    transform: rotate(-90deg);
+    position: absolute;
+    inset: 0;
+  }
+
+  .timer-circle-bg {
+    fill: none;
+    stroke: var(--bg3);
+    stroke-width: 3;
+  }
+
+  .timer-circle-fg {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+
+  .timer-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* ===== TYPING AREA ===== */
+  .typing-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    cursor: text;
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+
+  .level-challenge-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .challenge-icon {
+    font-size: 24px;
+  }
+
+  .challenge-title {
+    font-family: var(--devanagari);
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .challenge-desc {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .words-wrap {
+    font-family: var(--devanagari);
+    font-size: 24px;
+    line-height: 2;
+    color: var(--muted);
+    min-height: 130px;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .w { display: inline; margin-right: 12px; }
+
+  .ch { position: relative; display: inline; }
+  .ch.correct { color: var(--green); }
+  .ch.wrong { color: var(--accent2); text-decoration: underline; text-decoration-color: rgba(232,74,95,0.5); }
+  .ch.cursor::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    width: 2px;
+    height: 80%;
+    background: var(--accent);
+    animation: blink 0.7s ease-in-out infinite;
+    border-radius: 1px;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .hidden-input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    inset: 0;
+    font-size: 16px;
+    cursor: text;
+  }
+
+  /* ===== COMBO ===== */
+  .combo-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .combo-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+
+  .combo-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .combo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .combo-dot.lit {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    border-color: var(--accent);
+  }
+
+  .combo-dot.lit.high { background: var(--green); border-color: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  .combo-multiplier {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 700;
+    min-width: 40px;
+  }
+
+  /* hints */
+  .hint-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .hint-pill {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 3px 12px;
+    font-family: var(--devanagari);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ===== RESULT SCREEN ===== */
+  #screen-result {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .result-badge {
+    font-size: 64px;
+    margin-bottom: 1rem;
+    animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes pop { from{transform:scale(0) rotate(-20deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+
+  .result-title {
+    font-family: var(--devanagari);
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    animation: fadeUp 0.4s 0.2s ease both;
+  }
+
+  .result-subtitle {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.4s 0.3s ease both;
+  }
+
+  .result-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    animation: fadeUp 0.4s 0.4s ease both;
+  }
+
+  .result-stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+  }
+
+  .result-stat-num {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .result-stat-lbl {
+    font-family: var(--devanagari);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* Stars display */
+  .stars-display {
+    font-size: 32px;
+    letter-spacing: 4px;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.4s 0.5s ease both;
+  }
+
+  /* requirement display */
+  .requirements-met {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 2rem;
+    max-width: 360px;
+    width: 100%;
+    animation: fadeUp 0.4s 0.55s ease both;
+  }
+
+  .req-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .req-label { font-family: var(--devanagari); color: var(--muted); }
+  .req-result { font-weight: 700; }
+  .req-result.pass { color: var(--green); }
+  .req-result.fail { color: var(--accent2); }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    animation: fadeUp 0.4s 0.6s ease both;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 32px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  /* ===== LEVEL UP OVERLAY ===== */
+  #levelup-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  #levelup-overlay.show { display: flex; }
+
+  .levelup-emoji { font-size: 72px; animation: pop 0.5s ease both; }
+  .levelup-text {
+    font-family: var(--devanagari);
+    font-size: 36px;
+    font-weight: 700;
+    margin: 1rem 0 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fadeUp 0.4s 0.2s ease both;
+  }
+
+  .levelup-sub { font-size: 12px; letter-spacing: 2px; color: var(--muted); animation: fadeUp 0.4s 0.3s ease both; }
+
+  /* ===== PARTICLE FX ===== */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    animation: particleFly 0.8s ease-out forwards;
+    z-index: 200;
+  }
+
+  @keyframes particleFly {
+    from { opacity: 1; transform: translate(0, 0) scale(1); }
+    to { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== COMPLETE SCREEN ===== */
+  #screen-complete {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .complete-trophy { font-size: 80px; animation: pop 0.6s ease both; }
+
+  .complete-title {
+    font-family: var(--devanagari);
+    font-size: 36px;
+    font-weight: 700;
+    margin: 1rem 0 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fadeUp 0.4s 0.2s ease both;
+  }
+
+  .complete-sub {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    animation: fadeUp 0.4s 0.3s ease both;
+    margin-bottom: 3rem;
+  }
+
+  .total-stars {
+    font-size: 48px;
+    animation: fadeUp 0.4s 0.4s ease both;
+    margin-bottom: 1rem;
+  }
+
+  .total-stars-label { font-size: 12px; letter-spacing: 2px; color: var(--muted); animation: fadeUp 0.4s 0.5s ease both; margin-bottom: 3rem; }
+
+  /* Shortcuts hint */
+  .shortcuts { font-size: 10px; color: var(--muted); margin-top: 2rem; letter-spacing: 1px; }
+  .key { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="screen-landing" class="screen active">
+  <div class="logo-mark">नेपाली<span style="opacity:0.6">type</span></div>
+  <div class="logo-sub">Nepali Typing Game</div>
+  <div class="tagline">टाइपिङ सिक्नुहोस् — स्तर दर स्तर</div>
+  <div class="levels-heading">स्तर छान्नुहोस्</div>
+  <div class="levels-grid" id="levels-grid"></div>
+  <div class="shortcuts" style="margin-top:2rem">
+    <span class="key">Tab</span> restart &nbsp; <span class="key">Esc</span> menu
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <button class="back-btn" onclick="goHome()">← मेनु</button>
+    <div class="level-badge">स्तर <strong id="g-level-num">1</strong> &nbsp;/&nbsp; 10</div>
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1px" id="g-level-name"></div>
+  </div>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="word-progress" style="width:0%">
+      <div class="progress-glow"></div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-num" id="g-wpm">0</div>
+      <div class="stat-lbl">WPM</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-box">
+      <div class="stat-num" id="g-acc">100%</div>
+      <div class="stat-lbl">सटीकता</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-box">
+      <div class="stat-num" id="g-score">0</div>
+      <div class="stat-lbl">स्कोर</div>
+    </div>
+    <div class="timer-wrap">
+      <svg class="timer-svg" viewBox="0 0 64 64" width="64" height="64">
+        <circle class="timer-circle-bg" cx="32" cy="32" r="28"/>
+        <circle class="timer-circle-fg" id="timer-circle" cx="32" cy="32" r="28"
+          stroke-dasharray="175.9" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-num" id="g-timer">30</div>
+    </div>
+  </div>
+
+  <div class="combo-bar">
+    <span class="combo-label">Combo</span>
+    <div class="combo-dots" id="combo-dots"></div>
+    <span class="combo-multiplier" id="combo-mult">x1</span>
+  </div>
+
+  <div class="typing-container" id="typing-container" onclick="focusInput()">
+    <div class="level-challenge-info">
+      <span class="challenge-icon" id="challenge-icon">📝</span>
+      <div>
+        <div class="challenge-title" id="challenge-title">शब्द टाइप गर्नुहोस्</div>
+        <div class="challenge-desc" id="challenge-desc">जतिसक्दो छिटो र सही टाइप गर्नुहोस्</div>
+      </div>
+    </div>
+    <div class="words-wrap" id="words-wrap"></div>
+    <input type="text" class="hidden-input" id="hidden-input"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    <div class="hint-bar" id="hint-bar"></div>
+  </div>
+
+  <div class="shortcuts">
+    <span class="key">Tab</span> पुनः सुरु &nbsp;
+    <span class="key">Esc</span> मेनु
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-badge" id="r-badge">🎉</div>
+  <div class="result-title" id="r-title">बधाई छ!</div>
+  <div class="result-subtitle" id="r-sub">स्तर १ पूर्ण</div>
+  <div class="stars-display" id="r-stars">⭐⭐⭐</div>
+  <div class="result-stats-grid">
+    <div class="result-stat-card">
+      <div class="result-stat-num" id="r-wpm">0</div>
+      <div class="result-stat-lbl">WPM</div>
+    </div>
+    <div class="result-stat-card">
+      <div class="result-stat-num" id="r-acc">0%</div>
+      <div class="result-stat-lbl">सटीकता</div>
+    </div>
+    <div class="result-stat-card">
+      <div class="result-stat-num" id="r-score">0</div>
+      <div class="result-stat-lbl">स्कोर</div>
+    </div>
+  </div>
+  <div class="requirements-met" id="requirements-met"></div>
+  <div class="btn-row">
+    <button class="btn-secondary" onclick="retryLevel()">फेरि प्रयास</button>
+    <button class="btn-primary" id="r-next-btn" onclick="nextLevel()">अर्को स्तर →</button>
+  </div>
+  <div class="shortcuts" style="margin-top:1.5rem">
+    <span class="key">Enter</span> अर्को स्तर &nbsp; <span class="key">R</span> फेरि प्रयास
+  </div>
+</div>
+
+<!-- COMPLETE -->
+<div id="screen-complete" class="screen">
+  <div class="complete-trophy">🏆</div>
+  <div class="complete-title">सबै स्तर पूर्ण!</div>
+  <div class="complete-sub">You mastered Nepali Typing!</div>
+  <div class="total-stars" id="c-stars"></div>
+  <div class="total-stars-label">कुल तारा</div>
+  <div class="btn-row">
+    <button class="btn-primary" onclick="goHome()">फेरि खेल्नुहोस्</button>
+  </div>
+</div>
+
+<!-- LEVEL UP OVERLAY -->
+<div id="levelup-overlay">
+  <div class="levelup-emoji" id="lu-emoji">🚀</div>
+  <div class="levelup-text" id="lu-text">स्तर २ खुल्यो!</div>
+  <div class="levelup-sub">अर्को स्तर तयार...</div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const LEVELS = [
+  {
+    num: 1,
+    name: "शुरुवात",
+    icon: "🌱",
+    desc: "सरल र छोटा शब्दहरू",
+    challenge: "सरल शब्द टाइप गर्नुहोस्",
+    time: 45,
+    wordCount: 15,
+    minWPM: 8,
+    minAcc: 70,
+    words: ["घर","माटो","पानी","आमा","बुवा","दाजु","दिदी","खाना","दूध","रात","दिन","बाटो","काम","हात","आँखा"]
+  },
+  {
+    num: 2,
+    name: "बाल्यकाल",
+    icon: "🌿",
+    desc: "रोजना प्रयोग हुने शब्दहरू",
+    challenge: "दैनिक शब्द टाइप गर्नुहोस्",
+    time: 45,
+    wordCount: 18,
+    minWPM: 12,
+    minAcc: 72,
+    words: ["नेपाल","काठमाडौं","सूर्य","चन्द्र","आकाश","तारा","नदी","पहाड","जंगल","फूल","फल","रूख","गाई","कुकुर","बिरालो","माछा","पन्छी","हिमाल"]
+  },
+  {
+    num: 3,
+    name: "किशोरावस्था",
+    icon: "🌸",
+    desc: "परिवार र समाज",
+    challenge: "परिवारका शब्द टाइप गर्नुहोस्",
+    time: 40,
+    wordCount: 20,
+    minWPM: 15,
+    minAcc: 75,
+    words: ["परिवार","समाज","साथी","प्रेम","मित्रता","विद्यालय","शिक्षक","विद्यार्थी","किताब","कापी","कलम","सिक्नु","पढ्नु","लेख्नु","खेल्नु","हाँस्नु","रुनु","बोल्नु","सुन्नु","हेर्नु"]
+  },
+  {
+    num: 4,
+    name: "युवाकाल",
+    icon: "⚡",
+    desc: "प्रकृति र वातावरण",
+    challenge: "प्रकृतिका शब्द छिटो टाइप गर्नुहोस्",
+    time: 40,
+    wordCount: 22,
+    minWPM: 18,
+    minAcc: 78,
+    words: ["वातावरण","प्रकृति","जलवायु","हावा","वर्षा","हिउँ","तुफान","भूकम्प","बाढी","खडेरी","ताल","झरना","उपत्यका","फाँट","मरुभूमि","समुद्र","बादल","इन्द्रेणी","कुहिरो","शीतलहर","गर्मी","चिसो"]
+  },
+  {
+    num: 5,
+    name: "ज्ञानको खोज",
+    icon: "📚",
+    desc: "विज्ञान र प्रविधि",
+    challenge: "विज्ञानका शब्द सटीक टाइप गर्नुहोस्",
+    time: 35,
+    wordCount: 22,
+    minWPM: 22,
+    minAcc: 80,
+    words: ["विज्ञान","प्रविधि","कम्प्युटर","इन्टरनेट","मोबाइल","अनुसन्धान","प्रयोगशाला","रसायन","भौतिक","जीवविज्ञान","गणित","ज्यामिति","बिजुली","चुम्बक","ताप","ऊर्जा","परमाणु","अणु","ग्रह","तारामण्डल","आकाशगंगा","ब्रह्माण्ड"]
+  },
+  {
+    num: 6,
+    name: "सांस्कृतिक यात्रा",
+    icon: "🎭",
+    desc: "नेपाली संस्कृति र परम्परा",
+    challenge: "सांस्कृतिक शब्दहरू सही गरी टाइप गर्नुहोस्",
+    time: 35,
+    wordCount: 24,
+    minWPM: 25,
+    minAcc: 82,
+    words: ["संस्कृति","परम्परा","धर्म","आस्था","पूजा","चाडपर्व","दशैं","तिहार","होली","बुद्धजयन्ती","इन्द्रजात्रा","मेला","नृत्य","सङ्गीत","कविता","साहित्य","कला","मूर्ति","मन्दिर","स्तूप","बिहार","दरबार","किल्ला","इतिहास"]
+  },
+  {
+    num: 7,
+    name: "राजनीतिक चेतना",
+    icon: "🏛️",
+    desc: "राज्य र शासन",
+    challenge: "राजनीतिक शब्द छिटो टाइप गर्नुहोस्",
+    time: 30,
+    wordCount: 24,
+    minWPM: 28,
+    minAcc: 83,
+    words: ["लोकतन्त्र","संविधान","सरकार","संसद","राष्ट्रपति","प्रधानमन्त्री","मन्त्रिपरिषद","अदालत","न्याय","कानून","अधिकार","कर्तव्य","स्वतन्त्रता","समानता","एकता","विविधता","संघीयता","प्रदेश","पालिका","निर्वाचन","मतदान","राजनीति","नागरिक","राष्ट्रियता"]
+  },
+  {
+    num: 8,
+    name: "आर्थिक दृष्टि",
+    icon: "💡",
+    desc: "अर्थतन्त्र र व्यापार",
+    challenge: "आर्थिक शब्दहरू द्रुतगतिमा टाइप गर्नुहोस्",
+    time: 30,
+    wordCount: 26,
+    minWPM: 32,
+    minAcc: 85,
+    words: ["अर्थतन्त्र","व्यापार","उद्योग","कृषि","उत्पादन","निर्यात","आयात","बजार","मूल्य","मुद्रास्फीति","बैंक","बचत","लगानी","ऋण","ब्याज","कर","राजस्व","बजेट","विकास","पूर्वाधार","रोजगार","श्रम","उद्यमी","व्यवसायी","सेवा","पर्यटन"]
+  },
+  {
+    num: 9,
+    name: "साहित्यिक मस्तिष्क",
+    icon: "✍️",
+    desc: "साहित्य र दर्शन",
+    challenge: "साहित्यिक शब्दहरू सटीक टाइप गर्नुहोस्",
+    time: 28,
+    wordCount: 28,
+    minWPM: 35,
+    minAcc: 87,
+    words: ["दर्शन","विचार","चिन्तन","सत्य","न्याय","सौन्दर्य","कल्पना","सृजना","अभिव्यक्ति","भावना","संवेदना","चेतना","अनुभव","स्मृति","स्वप्न","आशा","विश्वास","साहस","धैर्य","संकल्प","प्रेरणा","उत्साह","जिज्ञासा","अनुसन्धान","खोज","आविष्कार","ज्ञान","बुद्धि"]
+  },
+  {
+    num: 10,
+    name: "मास्टर",
+    icon: "👑",
+    desc: "अन्तिम परीक्षा — सबभन्दा कठिन!",
+    challenge: "मास्टर स्तर — सबैभन्दा द्रुत र सटीक!",
+    time: 25,
+    wordCount: 30,
+    minWPM: 40,
+    minAcc: 90,
+    words: ["सर्वोच्च","प्रतिनिधित्व","संवैधानिक","विधायिकी","कार्यपालिका","न्यायपालिका","राष्ट्रियकरण","अन्तर्राष्ट्रिय","महासन्धि","सम्झौता","कूटनीति","सम्बन्ध","पारस्परिक","सहयोग","समन्वय","एकीकरण","विकेन्द्रीकरण","पुनर्संरचना","प्रजातन्त्र","गणतन्त्र","राजतन्त्र","संघवाद","स्वायत्तता","जवाफदेहिता","पारदर्शिता","सुशासन","भ्रष्टाचार","जिम्मेवारी","नागरिकता","मौलिकअधिकार"]
+  }
+];
+
+// ===================== STATE =====================
+let state = {
+  currentLevel: 0,
+  unlockedLevel: 0,
+  levelProgress: new Array(10).fill(null), // {stars, wpm, acc, score}
+  // game
+  words: [],
+  currentWord: 0,
+  currentChar: 0,
+  typedChars: 0,
+  correctChars: 0,
+  errors: 0,
+  combo: 0,
+  maxCombo: 0,
+  score: 0,
+  timeLeft: 30,
+  timerInterval: null,
+  running: false,
+  finished: false,
+  startTime: null,
+};
+
+// Load from storage
+try {
+  const saved = localStorage.getItem('nepali-typing-game');
+  if (saved) {
+    const p = JSON.parse(saved);
+    state.unlockedLevel = p.unlockedLevel || 0;
+    state.levelProgress = p.levelProgress || new Array(10).fill(null);
+  }
+} catch(e) {}
+
+function saveProgress() {
+  try {
+    localStorage.setItem('nepali-typing-game', JSON.stringify({
+      unlockedLevel: state.unlockedLevel,
+      levelProgress: state.levelProgress
+    }));
+  } catch(e) {}
+}
+
+// ===================== HOME =====================
+function buildLevelGrid() {
+  const grid = document.getElementById('levels-grid');
+  grid.innerHTML = '';
+  LEVELS.forEach((lvl, i) => {
+    const card = document.createElement('div');
+    const prog = state.levelProgress[i];
+    const locked = i > state.unlockedLevel;
+    const stars = prog ? prog.stars : 0;
+    card.className = 'level-card' + (locked ? ' locked' : '') + (prog ? ' completed' : '') + (i === state.unlockedLevel && !prog ? ' current' : '');
+    if (locked) {
+      card.innerHTML = `<span class="level-lock">🔒</span><span class="level-num" style="color:var(--muted)">${i+1}</span><span class="level-label">${lvl.name}</span>`;
+    } else {
+      const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+      card.innerHTML = `<span class="level-num">${i+1}</span><span class="level-label">${lvl.icon} ${lvl.name}</span><div class="level-stars">${starStr}</div>`;
+      card.addEventListener('click', () => startLevel(i));
+    }
+    grid.appendChild(card);
+  });
+}
+
+function goHome() {
+  showScreen('landing');
+  buildLevelGrid();
+}
+
+// ===================== GAME INIT =====================
+function startLevel(idx) {
+  state.currentLevel = idx;
+  const lvl = LEVELS[idx];
+  state.words = shuffle([...lvl.words]);
+  // If fewer words than wordCount, repeat
+  while (state.words.length < lvl.wordCount) {
+    state.words.push(...shuffle([...lvl.words]));
+  }
+  state.words = state.words.slice(0, lvl.wordCount);
+  state.currentWord = 0;
+  state.currentChar = 0;
+  state.typedChars = 0;
+  state.correctChars = 0;
+  state.errors = 0;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.score = 0;
+  state.running = false;
+  state.finished = false;
+  state.timeLeft = lvl.time;
+  state.startTime = null;
+
+  clearInterval(state.timerInterval);
+
+  // UI
+  document.getElementById('g-level-num').textContent = idx + 1;
+  document.getElementById('g-level-name').textContent = lvl.name;
+  document.getElementById('challenge-icon').textContent = lvl.icon;
+  document.getElementById('challenge-title').textContent = lvl.challenge;
+  document.getElementById('challenge-desc').textContent = lvl.desc;
+  document.getElementById('g-wpm').textContent = '0';
+  document.getElementById('g-acc').textContent = '100%';
+  document.getElementById('g-score').textContent = '0';
+  document.getElementById('g-timer').textContent = lvl.time;
+  document.getElementById('word-progress').style.width = '0%';
+
+  setTimerCircle(1);
+  buildCombo(0);
+  renderWords();
+  buildHints(lvl);
+
+  showScreen('game');
+  focusInput();
+}
+
+function buildHints(lvl) {
+  const bar = document.getElementById('hint-bar');
+  bar.innerHTML = '';
+  if (lvl.num <= 3) {
+    const sample = lvl.words.slice(0, 4);
+    sample.forEach(w => {
+      const p = document.createElement('div');
+      p.className = 'hint-pill';
+      p.textContent = w;
+      bar.appendChild(p);
+    });
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:10px;color:var(--muted);align-self:center;margin-left:4px';
+    note.textContent = '← नमूना शब्द';
+    bar.appendChild(note);
+  }
+}
+
+// ===================== RENDER WORDS =====================
+function renderWords() {
+  const wrap = document.getElementById('words-wrap');
+  wrap.innerHTML = '';
+  state.words.forEach((word, wi) => {
+    const wEl = document.createElement('span');
+    wEl.className = 'w';
+    wEl.id = 'w-' + wi;
+    [...word].forEach((ch, ci) => {
+      const cEl = document.createElement('span');
+      cEl.className = 'ch';
+      cEl.id = `c-${wi}-${ci}`;
+      cEl.textContent = ch;
+      wEl.appendChild(cEl);
+    });
+    wrap.appendChild(wEl);
+  });
+  updateCaret();
+}
+
+function updateCaret() {
+  document.querySelectorAll('.ch.cursor').forEach(el => el.classList.remove('cursor'));
+  const el = document.getElementById(`c-${state.currentWord}-${state.currentChar}`);
+  if (el) el.classList.add('cursor');
+  // scroll word into view
+  const wEl = document.getElementById('w-' + state.currentWord);
+  if (wEl) {
+    const wrap = document.getElementById('words-wrap');
+    const top = wEl.offsetTop;
+    if (top + wEl.offsetHeight > wrap.scrollTop + wrap.offsetHeight * 0.7) {
+      wrap.scrollTop = top - wrap.offsetHeight * 0.3;
+    }
+  }
+}
+
+// ===================== COMBO =====================
+function buildCombo(n) {
+  const max = 10;
+  const dots = document.getElementById('combo-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < max; i++) {
+    const d = document.createElement('div');
+    d.className = 'combo-dot' + (i < n ? ' lit' + (n >= 8 ? ' high' : '') : '');
+    dots.appendChild(d);
+  }
+  const mult = Math.floor(n / 3) + 1;
+  document.getElementById('combo-mult').textContent = 'x' + mult;
+}
+
+// ===================== INPUT =====================
+function focusInput() { document.getElementById('hidden-input').focus(); }
+
+document.getElementById('hidden-input').addEventListener('input', function() {
+  if (state.finished) return;
+  const val = this.value;
+  if (!state.running && val.length > 0) beginGame();
+
+  const word = state.words[state.currentWord];
+  if (!word) return;
+
+  if (val.endsWith(' ')) {
+    const typed = val.trim();
+    if (!typed) { this.value = ''; return; }
+
+    // Mark chars
+    let wordCorrect = typed === word;
+    for (let i = 0; i < word.length; i++) {
+      const el = document.getElementById(`c-${state.currentWord}-${i}`);
+      if (!el) continue;
+      if (i < typed.length) {
+        if (typed[i] === word[i]) el.className = 'ch correct';
+        else { el.className = 'ch wrong'; state.errors++; }
+      } else {
+        el.className = 'ch wrong'; state.errors++;
+      }
+    }
+
+    const charCorrect = typed.split('').filter((c,i) => c === word[i]).length;
+    state.correctChars += charCorrect;
+    state.typedChars += typed.length;
+
+    if (wordCorrect) {
+      state.combo = Math.min(state.combo + 1, 10);
+      state.maxCombo = Math.max(state.maxCombo, state.combo);
+      const mult = Math.floor(state.combo / 3) + 1;
+      const pts = word.length * 10 * mult;
+      state.score += pts;
+      spawnParticles(document.getElementById('w-' + state.currentWord));
+    } else {
+      state.combo = 0;
+    }
+
+    buildCombo(state.combo);
+    document.getElementById('g-score').textContent = state.score;
+    document.getElementById('word-progress').style.width =
+      ((state.currentWord + 1) / state.words.length * 100) + '%';
+
+    state.currentWord++;
+    state.currentChar = 0;
+    this.value = '';
+
+    if (state.currentWord >= state.words.length) { endGame(); return; }
+    updateLiveStats();
+    updateCaret();
+  } else {
+    const typed = val;
+    state.currentChar = typed.length;
+    const word2 = state.words[state.currentWord];
+    for (let i = 0; i < word2.length; i++) {
+      const el = document.getElementById(`c-${state.currentWord}-${i}`);
+      if (!el) continue;
+      if (i < typed.length) {
+        el.className = typed[i] === word2[i] ? 'ch correct' : 'ch wrong';
+      } else {
+        el.className = 'ch';
+      }
+    }
+    updateCaret();
+  }
+});
+
+function beginGame() {
+  state.running = true;
+  state.startTime = Date.now();
+  const lvl = LEVELS[state.currentLevel];
+  const circ = document.getElementById('timer-circle');
+  const circumference = 175.9;
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    const el = document.getElementById('g-timer');
+    el.textContent = state.timeLeft;
+    el.style.color = state.timeLeft <= 5 ? 'var(--accent2)' : 'var(--accent)';
+    setTimerCircle(state.timeLeft / lvl.time);
+    if (state.timeLeft <= 5) circ.style.stroke = 'var(--accent2)';
+    updateLiveStats();
+    if (state.timeLeft <= 0) endGame();
+  }, 1000);
+}
+
+function setTimerCircle(fraction) {
+  const circ = document.getElementById('timer-circle');
+  const circumference = 175.9;
+  circ.style.strokeDashoffset = circumference * (1 - fraction);
+}
+
+function updateLiveStats() {
+  const elapsed = state.startTime ? (Date.now() - state.startTime) / 60000 : 0;
+  const wpm = elapsed > 0 ? Math.round((state.correctChars / 5) / elapsed) : 0;
+  const acc = state.typedChars > 0 ? Math.round(state.correctChars / state.typedChars * 100) : 100;
+  document.getElementById('g-wpm').textContent = wpm;
+  const accEl = document.getElementById('g-acc');
+  accEl.textContent = acc + '%';
+  accEl.className = 'stat-num' + (acc >= 85 ? ' good' : acc < 70 ? ' bad' : '');
+}
+
+// ===================== END GAME =====================
+function endGame() {
+  clearInterval(state.timerInterval);
+  state.running = false;
+  state.finished = true;
+
+  const elapsed = state.startTime ? (Date.now() - state.startTime) / 60000 : 0.001;
+  const wpm = Math.round((state.correctChars / 5) / elapsed);
+  const acc = state.typedChars > 0 ? Math.round(state.correctChars / state.typedChars * 100) : 100;
+
+  const lvl = LEVELS[state.currentLevel];
+  const passed = wpm >= lvl.minWPM && acc >= lvl.minAcc;
+
+  // Stars
+  let stars = 0;
+  if (passed) {
+    stars = 1;
+    if (wpm >= lvl.minWPM * 1.3 && acc >= 85) stars = 2;
+    if (wpm >= lvl.minWPM * 1.6 && acc >= 90) stars = 3;
+  }
+
+  // Save
+  const prev = state.levelProgress[state.currentLevel];
+  if (!prev || stars > prev.stars || wpm > prev.wpm) {
+    state.levelProgress[state.currentLevel] = { stars, wpm, acc, score: state.score };
+  }
+  if (passed && state.currentLevel >= state.unlockedLevel && state.currentLevel < 9) {
+    state.unlockedLevel = state.currentLevel + 1;
+  }
+  saveProgress();
+
+  // Show result screen
+  setTimeout(() => showResult(wpm, acc, stars, passed, lvl), 500);
+}
+
+function showResult(wpm, acc, stars, passed, lvl) {
+  document.getElementById('r-wpm').textContent = wpm;
+  document.getElementById('r-acc').textContent = acc + '%';
+  document.getElementById('r-score').textContent = state.score;
+
+  const starStr = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  document.getElementById('r-stars').textContent = starStr;
+
+  if (passed) {
+    document.getElementById('r-badge').textContent = stars === 3 ? '🏆' : stars === 2 ? '🎉' : '✅';
+    document.getElementById('r-title').textContent = stars === 3 ? 'अद्भुत!' : stars === 2 ? 'बधाई छ!' : 'उत्तीर्ण!';
+    document.getElementById('r-sub').textContent = `स्तर ${lvl.num} पूर्ण — ${lvl.icon} ${lvl.name}`;
+  } else {
+    document.getElementById('r-badge').textContent = '😓';
+    document.getElementById('r-title').textContent = 'फेरि प्रयास गर्नुहोस्!';
+    document.getElementById('r-sub').textContent = `स्तर ${lvl.num} — ${lvl.name}`;
+  }
+
+  // Requirements
+  const reqDiv = document.getElementById('requirements-met');
+  reqDiv.innerHTML = '';
+  const reqs = [
+    { label: `न्यूनतम ${lvl.minWPM} WPM`, pass: wpm >= lvl.minWPM, got: wpm + ' WPM' },
+    { label: `न्यूनतम ${lvl.minAcc}% सटीकता`, pass: acc >= lvl.minAcc, got: acc + '%' }
+  ];
+  reqs.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'req-row';
+    row.innerHTML = `<span class="req-label">${r.label}</span><span class="req-result ${r.pass ? 'pass' : 'fail'}">${r.pass ? '✓ ' : '✗ '}${r.got}</span>`;
+    reqDiv.appendChild(row);
+  });
+
+  const nextBtn = document.getElementById('r-next-btn');
+  if (state.currentLevel >= 9) {
+    nextBtn.textContent = '🏆 मुख्य पर्दा';
+    nextBtn.onclick = showComplete;
+  } else if (!passed) {
+    nextBtn.style.opacity = '0.3';
+    nextBtn.style.pointerEvents = 'none';
+    nextBtn.textContent = 'अर्को स्तर (अवरुद्ध)';
+  } else {
+    nextBtn.style.opacity = '';
+    nextBtn.style.pointerEvents = '';
+    nextBtn.textContent = `स्तर ${state.currentLevel + 2} →`;
+    nextBtn.onclick = nextLevel;
+  }
+
+  showScreen('result');
+}
+
+function showComplete() {
+  const totalStars = state.levelProgress.reduce((a, p) => a + (p ? p.stars : 0), 0);
+  document.getElementById('c-stars').textContent = '⭐'.repeat(Math.min(totalStars, 30));
+  document.getElementById('c-stars').style.fontSize = '24px';
+  showScreen('complete');
+}
+
+function nextLevel() {
+  if (state.currentLevel >= 9) { showComplete(); return; }
+  const next = state.currentLevel + 1;
+  // Show levelup overlay briefly
+  document.getElementById('lu-emoji').textContent = LEVELS[next].icon;
+  document.getElementById('lu-text').textContent = `स्तर ${next + 1} खुल्यो!`;
+  const overlay = document.getElementById('levelup-overlay');
+  overlay.classList.add('show');
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    startLevel(next);
+  }, 1800);
+}
+
+function retryLevel() {
+  startLevel(state.currentLevel);
+}
+
+// ===================== PARTICLES =====================
+function spawnParticles(el) {
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const colors = ['#f5a623','#e84a5f','#4ecb71','#4aa8ff','#9b72ff'];
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 4 + Math.random() * 5;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 40 + Math.random() * 60;
+    p.style.cssText = `
+      left:${cx}px; top:${cy}px;
+      width:${size}px; height:${size}px;
+      background:${colors[i % colors.length]};
+      --tx:${Math.cos(angle)*dist}px;
+      --ty:${Math.sin(angle)*dist}px;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 800);
+  }
+}
+
+// ===================== UTILS =====================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+// ===================== KEYBOARD SHORTCUTS =====================
+document.addEventListener('keydown', e => {
+  const active = document.querySelector('.screen.active')?.id;
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    if (active === 'screen-game') startLevel(state.currentLevel);
+  }
+  if (e.key === 'Escape') {
+    clearInterval(state.timerInterval);
+    goHome();
+  }
+  if (e.key === 'Enter' && active === 'screen-result') nextLevel();
+  if ((e.key === 'r' || e.key === 'R') && active === 'screen-result') retryLevel();
+});
+
+// ===================== INIT =====================
+buildLevelGrid();
+</script>
+</body>
+</html>
